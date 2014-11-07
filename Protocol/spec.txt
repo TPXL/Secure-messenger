@@ -1,0 +1,67 @@
+1. Handshake
+Client sends Hello
+Server sends HelloStatus
+
+Next is Login or Register
+
+2. Login
+Client sends Login
+Server sends LoginStatus
+if failure:
+  Client needs to resend Login
+else if success:
+  Server sends FriendsList
+  Server sends FriendAddConfirm if any
+ 
+3. Register
+Client sends Register
+Server sends RegisterStatus
+if success:
+  Client proceeds to Login
+else if failure:
+  Client needs to resend Register
+
+4. Goodbye 
+Server or client send Goodbye and close the connection
+
+5. Friends request
+Client A sends SearchFriends
+Server sends Client A SearchFriendsResponse
+Client A sends FriendAdd B
+Server sends Client B FriendAddConfirm
+Client B sends FriendAddConfirmResponse
+if failure:
+  nothing happens
+else if success:
+  Server sends Client A FriendsList
+  Server sends Client B FriendsList
+  
+6. MessageStart
+Client A sends ConnectionStartRequest B to server
+Server sends ConnectionStartInfo to A and B 
+Client A sends ConnectionStart to B
+Client B sends ConnectionStart to A
+
+	MESSAGE((short)1), 			//String message
+	HELLOSTATUS((short)8), 		//boolean success + string message
+	LOGINSTATUS((short)9), 		//boolean success + string message + int ID
+	REGISTERSTATUS((short)10),	//boolean success + string message
+	SEARCHFRIENDSRESPONSE((short)11),	//string name(int ID)
+	FRIENDADDCONFIRM((short)12),		//string name (int ID)
+	FRIENDLIST((short)16),				//string name(int ID)
+	CONNECTIONSTARTINFO((short)17),		//string IP
+	CONNECTIONSTART((short)19);			//string name(int ID) //NAT punch?
+	
+	HELLO((short)2), 			//int hello, short version
+	LOGIN((short)3), 			//string username, string password
+	REGISTER((short)4), 		//string username, string password
+	SEARCHFRIENDS((short)5), 	//string name
+	FRIENDADD((short)6), 		//string name(int ID)
+	FRIENDREMOVE((short)7), 	//string name(int ID)
+	FRIENDADDCONFIRMRESPONSE((short)13),//boolean success, string name (int ID)
+	CHANGENICKNAME((short)15),			//string nickname
+	CONNECTIONSTARTREQUEST((short)18),	//string name(int ID)
+	
+	GOODBYE((short)14),					//string message
+	
+	
