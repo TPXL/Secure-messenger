@@ -1,11 +1,19 @@
 package com.tpxl.client;
 
+import java.io.FileInputStream;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Enumeration;
+
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 import org.teleal.cling.UpnpService;
 import org.teleal.cling.UpnpServiceImpl;
@@ -24,6 +32,7 @@ public class Client{
 
 		try
 		{
+			/*
 			Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces();
 			
 			while(n.hasMoreElements())
@@ -45,9 +54,27 @@ public class Client{
 					services.add(upnpService);
 				}
 			}	//Apparently this is good for P2P!
-			
+			*/
 			System.out.println("Connecting to server!");
-			ClientToServerConnectionHandler serverConnection = new ClientToServerConnectionHandler(new Socket(serverHostname, serverPort));
+			
+			SSLContext sslContext = SSLContext.getInstance( "TLS" );
+			KeyStore clientks = KeyStore.getInstance("JKS");
+			clientks.load(new FileInputStream("client.jks"), "123456".toCharArray());
+			TrustManagerFactory tm = TrustManagerFactory.getInstance("SunX509");
+			tm.init(clientks);
+			sslContext.init(null, tm.getTrustManagers(), null);
+			SSLSocketFactory socketFactory = sslContext.getSocketFactory();
+			
+			//SSLSocketFactory socketFactory = (SSLSocketFactory)SSLSocketFactory.getDefault();
+			//SocketFactory socketFactory = SocketFactory.getDefault();
+			
+			Socket socket = socketFactory.createSocket(serverHostname, serverPort);
+
+
+
+			
+			
+			ClientToServerConnectionHandler serverConnection = new ClientToServerConnectionHandler(socket);
 			serverConnection.run();		//stuff happens here!
 			System.out.println("Connection off!");
 		}catch(Exception e)

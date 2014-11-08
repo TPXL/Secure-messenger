@@ -34,7 +34,7 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 			System.out.println("Socket closed");
 			return;
 		}
-		while(!socket.isClosed())
+		while(socket.isConnected() && !socket.isClosed())
 		{
 			try
 			{
