@@ -36,17 +36,16 @@ public class Server {
 	static final int port = 45293;
 	
 	static String driver = "com.mysql.jdbc.Driver";
-	static String url = "jdbc:mysql://localhost:3306/messenger"; 
-	static String username = "messenger_admin";
-	static String password = "password1234";
 	
+	static Connection databaseConnection;
 	
-	public static void main(String args[]) throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException
+	public static void main(String args[]) throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, ClassNotFoundException
 	{
 		System.out.println("Running server");
 		//Load the database driver
+		Class.forName(driver);
 		
-		initDBConnection();
+		//initDBConnection();
 		//SSL
 		/*Properties p = new Properties();
 		p.setProperty("javax.net.ssl.keyStore", "server.jks");
@@ -129,7 +128,7 @@ public class Server {
 			)
 		{
 			System.out.println("Listening for connections!");
-			serverSocket.setNeedClientAuth(true);
+			//serverSocket.setNeedClientAuth(true);
 			SSLSocket socket;
 			while((socket = (SSLSocket)serverSocket.accept()) != null)
 			{
@@ -142,28 +141,4 @@ public class Server {
 			e.printStackTrace();
 		}
 	}
-	
-	static void initDBConnection()
-	{
-		try
-		{
-			Class.forName(driver);
-		}catch(Exception e)
-		{
-			//e.printStackTrace();
-		}
-		//Database connection
-		try
-		{
-			Connection connection = DriverManager.getConnection(url, username, password);
-			DatabaseMetaData metadata = connection.getMetaData();
-			String info = metadata.getDatabaseProductName() + " version " + metadata.getDatabaseProductVersion();
-			System.out.println(info);
-			connection.close();
-		}catch(Exception e)
-		{
-			//e.printStackTrace();
-		}
-	}
-	
 }

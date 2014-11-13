@@ -2,6 +2,11 @@ package com.tpxl.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 import com.tpxl.protocol.Packet;
 import com.tpxl.protocol.ServerPacketHandler;
@@ -15,10 +20,15 @@ import com.tpxl.protocol.packets.HelloPacket;
 import com.tpxl.protocol.packets.LoginPacket;
 import com.tpxl.protocol.packets.MessagePacket;
 import com.tpxl.protocol.packets.RegisterPacket;
+import com.tpxl.protocol.packets.RegisterStatusPacket;
 import com.tpxl.protocol.packets.SearchFriendsPacket;
 
 public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 
+	static String database_username = "messenger_admin";
+	static String database_password = "password1234";
+	static String database_url = "jdbc:mysql://localhost:3306/messenger_users"; 
+	
 	public Socket socket;
 	
 	public ServerConnectionHandler(Socket socket)
@@ -92,8 +102,34 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 	}
 	@Override
 	public void onPacketReceive(RegisterPacket registerPacket) {
-		// TODO Auto-generated method stub
+		String pass = registerPacket.getPassword();
+		String user = registerPacket.getUsername();
 		
+		//Database connection
+		try
+		{
+			Connection databaseConnection = DriverManager.getConnection(database_url, database_username, database_password);
+			PreparedStatement ps = databaseConnection.prepareStatement("select * from user where username like ?");
+			ps.setString(1, user);
+			ResultSet resultSet = ps.executeQuery();
+			if(resultSet.next())
+			{
+				System.out.println("User already exists");
+				new RegisterStatusPacket(false, "Username taken.").write(socket.getOutputStream());
+			}
+			else
+			{
+				ps = databaseConnection.prepareStatement("insert into user (username, password) values (?, ?)");
+				ps.setString(1, user);
+				ps.setString(2, pass);
+				ps.executeUpdate();
+				System.out.println("User " + user + " added.");
+				new RegisterStatusPacket(true, "Registration complete.").write(socket.getOutputStream());
+			}
+		}catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 	@Override
 	public void onPacketReceive(SearchFriendsPacket searchFriendsPacket) {

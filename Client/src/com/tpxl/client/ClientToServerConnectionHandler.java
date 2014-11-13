@@ -12,6 +12,7 @@ import com.tpxl.protocol.packets.HelloPacket;
 import com.tpxl.protocol.packets.HelloStatusPacket;
 import com.tpxl.protocol.packets.LoginStatusPacket;
 import com.tpxl.protocol.packets.MessagePacket;
+import com.tpxl.protocol.packets.RegisterPacket;
 import com.tpxl.protocol.packets.RegisterStatusPacket;
 import com.tpxl.protocol.packets.SearchFriendsResponsePacket;
 
@@ -29,7 +30,7 @@ public class ClientToServerConnectionHandler implements Runnable, ClientPacketHa
 		try
 		{
 			new HelloPacket(Packet.getHelloInt(), Packet.getProtocolVersion()).write(socket.getOutputStream());
-			
+			new RegisterPacket("user2", "password").write(socket.getOutputStream());
 			while(!socket.isClosed() && socket.isConnected())
 			{
 				Packet.readPacket(this, socket.getInputStream());
@@ -61,8 +62,7 @@ public class ClientToServerConnectionHandler implements Runnable, ClientPacketHa
 
 	@Override
 	public void onPacketReceive(RegisterStatusPacket registerStatusPacket) {
-		// TODO Auto-generated method stub
-		
+		System.out.println("Success: " + registerStatusPacket.getSuccess() + "(" + registerStatusPacket.getMessage() + ")");
 	}
 
 	@Override

@@ -33,5 +33,14 @@ public class RegisterPacket extends Packet {
 	public PacketType getType() {
 		return PacketType.REGISTER;
 	}
-
+	
+	public String getUsername()
+	{
+		return username;
+	}
+	
+	public String getPassword()
+	{
+		return password;
+	}
 }

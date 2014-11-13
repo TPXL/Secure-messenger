@@ -34,4 +34,14 @@ public class RegisterStatusPacket extends Packet {
 		return PacketType.REGISTERSTATUS;
 	}
 
+	public boolean getSuccess()
+	{
+		return success;
+	}
+	
+	public String getMessage()
+	{
+		return message;
+	}
+	
 }
