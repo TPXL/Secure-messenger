@@ -43,6 +43,7 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 			{
 				System.out.println(e.getMessage());
 				e.printStackTrace();
+				break;
 			}
 		}
 		System.out.println("Connection closed!");

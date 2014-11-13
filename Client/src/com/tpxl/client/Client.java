@@ -68,10 +68,7 @@ public class Client{
 			//SSLSocketFactory socketFactory = (SSLSocketFactory)SSLSocketFactory.getDefault();
 			//SocketFactory socketFactory = SocketFactory.getDefault();
 			
-			Socket socket = socketFactory.createSocket(serverHostname, serverPort);
-
-
-
+			SSLSocket socket = (SSLSocket )socketFactory.createSocket(serverHostname, serverPort);
 			
 			
 			ClientToServerConnectionHandler serverConnection = new ClientToServerConnectionHandler(socket);
