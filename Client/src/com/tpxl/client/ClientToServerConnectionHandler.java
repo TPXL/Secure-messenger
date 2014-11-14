@@ -30,7 +30,8 @@ public class ClientToServerConnectionHandler implements Runnable, ClientPacketHa
 		try
 		{
 			new HelloPacket(Packet.getHelloInt(), Packet.getProtocolVersion()).write(socket.getOutputStream());
-			new RegisterPacket("user2", "password").write(socket.getOutputStream());
+			new RegisterPacket("user5", "password").write(socket.getOutputStream());
+			new RegisterPacket("user6", "password").write(socket.getOutputStream());
 			while(!socket.isClosed() && socket.isConnected())
 			{
 				Packet.readPacket(this, socket.getInputStream());

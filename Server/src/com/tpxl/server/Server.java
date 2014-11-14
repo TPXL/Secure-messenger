@@ -2,32 +2,20 @@ package com.tpxl.server;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
+import java.net.InetAddress;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Properties;
+import java.util.Timer;
+import java.util.concurrent.ConcurrentSkipListSet;
 
-import javax.net.ServerSocketFactory;
-import javax.net.SocketFactory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
 
 
 public class Server {
@@ -35,15 +23,34 @@ public class Server {
 	//String hostName = "127.0.0.1";
 	static final int port = 45293;
 	
-	static String driver = "com.mysql.jdbc.Driver";
+	static final String driver = "com.mysql.jdbc.Driver";
 	
-	static Connection databaseConnection;
+	Connection databaseConnection;
 	
-	public static void main(String args[]) throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, ClassNotFoundException
+	ConcurrentSkipListSet<InetAddress> recentlyRegisteredIPs;
+	Timer recentlyRegisteredIPTimer;
+	
+	public Server()
 	{
+		recentlyRegisteredIPs = new ConcurrentSkipListSet<InetAddress>();
+		recentlyRegisteredIPTimer = new Timer(true);
+	}
+	
+	
+	
+	public static void main(String args[]) throws NoSuchAlgorithmException, KeyStoreException, CertificateException, ClassNotFoundException, IOException 
+	{
+		new Server().start();
+	}
+
+
+
+	public void start() throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, ClassNotFoundException{
 		System.out.println("Running server");
 		//Load the database driver
 		Class.forName(driver);
+		
+		recentlyRegisteredIPs = new ConcurrentSkipListSet<InetAddress>();
 		
 		//initDBConnection();
 		//SSL
@@ -132,7 +139,7 @@ public class Server {
 			SSLSocket socket;
 			while((socket = (SSLSocket)serverSocket.accept()) != null)
 			{
-				ServerConnectionHandler connectionHandler = new ServerConnectionHandler(socket);
+				ServerConnectionHandler connectionHandler = new ServerConnectionHandler(socket, this);
 				socket = null;
 				new Thread(connectionHandler).start();
 			}

@@ -1,12 +1,14 @@
 package com.tpxl.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import com.tpxl.protocol.Packet;
 import com.tpxl.protocol.ServerPacketHandler;
@@ -29,11 +31,13 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 	static String database_password = "password1234";
 	static String database_url = "jdbc:mysql://localhost:3306/messenger_users"; 
 	
-	public Socket socket;
+	Socket socket;
+	Server server;
 	
-	public ServerConnectionHandler(Socket socket)
+	public ServerConnectionHandler(Socket socket, Server server)
 	{
 		this.socket = socket;
+		this.server = server;
 	}
 	
 	public void run() {
@@ -102,14 +106,27 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 	}
 	@Override
 	public void onPacketReceive(RegisterPacket registerPacket) {
+		
+		if(server.recentlyRegisteredIPs.contains(socket.getInetAddress()))
+		{
+			try {
+				new RegisterStatusPacket(false, "Registration failed: You can only register once per 300 seconds.").write(socket.getOutputStream());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return;
+		}
+		
 		String pass = registerPacket.getPassword();
 		String user = registerPacket.getUsername();
+		
 		
 		//Database connection
 		try
 		{
 			Connection databaseConnection = DriverManager.getConnection(database_url, database_username, database_password);
-			PreparedStatement ps = databaseConnection.prepareStatement("select * from user where username like ?");
+			PreparedStatement ps = databaseConnection.prepareStatement("select exists(select 1 from user where username like ? limit 1)");
 			ps.setString(1, user);
 			ResultSet resultSet = ps.executeQuery();
 			if(resultSet.next())
@@ -124,6 +141,8 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 				ps.setString(2, pass);
 				ps.executeUpdate();
 				System.out.println("User " + user + " added.");
+				server.recentlyRegisteredIPTimer.schedule(new RegisterTask(socket.getInetAddress()), 300000);
+				server.recentlyRegisteredIPs.add(socket.getInetAddress());
 				new RegisterStatusPacket(true, "Registration complete.").write(socket.getOutputStream());
 			}
 		}catch(Exception e)
@@ -166,5 +185,23 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 	public void onPacketReceive(
 			ConnectionStartRequestPacket connectionStartRequestPacket) {
 		// TODO Auto-generated method stub
+	}
+	
+	class RegisterTask extends TimerTask
+	{
+		private InetAddress inetAddress;
+		
+		RegisterTask(InetAddress inetAddress)
+		{
+			this.inetAddress = inetAddress;
+		}
+		
+		@Override
+		public void run() {
+			if(server.recentlyRegisteredIPs.remove(inetAddress))
+				System.out.println("Successfully removed inetAddr: " + inetAddress.getHostAddress());
+			else
+				System.out.println("Address: " + inetAddress.getHostAddress() + " didn't exist in this set for some reason.");
+		}
 	}
 }
