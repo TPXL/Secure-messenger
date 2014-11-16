@@ -33,5 +33,14 @@ public class SearchFriendsResponsePacket extends Packet {
 	public PacketType getType() {
 		return PacketType.SEARCHFRIENDSRESPONSE;
 	}
-
+	
+	public String getName()
+	{
+		return name;
+	}
+	
+	public int getID()
+	{
+		return ID;
+	}
 }

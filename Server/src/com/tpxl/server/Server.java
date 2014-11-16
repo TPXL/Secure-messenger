@@ -1,15 +1,18 @@
 package com.tpxl.server;
 
+import java.beans.PropertyVetoException;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.sql.Connection;
 import java.util.Timer;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -17,40 +20,52 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+
 
 public class Server {
-	
 	//String hostName = "127.0.0.1";
 	static final int port = 45293;
-	
 	static final String driver = "com.mysql.jdbc.Driver";
+	static final int threadCorePoolSize = 5;
+	static final int threadMaxPoolSize = 200;
+	static final int threadKeepAliveTime = 300;
+	static final TimeUnit threadTimeUnit = TimeUnit.SECONDS;
+	static final String database_url = "jdbc:mysql://localhost:3306/messenger_users"; 
+	static final String database_username = "messenger_admin";
+	static final String database_password = "password1234";
 	
-	Connection databaseConnection;
-	
-	ConcurrentSkipListSet<InetAddress> recentlyRegisteredIPs;
+	ConcurrentSkipListSet<String> recentlyRegisteredIPs;
 	Timer recentlyRegisteredIPTimer;
+	Timer interruptServerConnectionTimer;
+	ThreadPoolExecutor threadPoolExecutor;
+	ComboPooledDataSource comboPooledDataSource;
+	ConcurrentHashMap<Integer, ServerConnectionHandler> serverByUserID;
 	
-	public Server()
+	public Server() throws PropertyVetoException
 	{
-		recentlyRegisteredIPs = new ConcurrentSkipListSet<InetAddress>();
+		recentlyRegisteredIPs = new ConcurrentSkipListSet<String>();
 		recentlyRegisteredIPTimer = new Timer(true);
+		interruptServerConnectionTimer = new Timer(true);
+		threadPoolExecutor = new ThreadPoolExecutor(threadCorePoolSize, threadMaxPoolSize, threadKeepAliveTime, threadTimeUnit, new SynchronousQueue<Runnable>());
+		comboPooledDataSource = new ComboPooledDataSource();
+		comboPooledDataSource.setDriverClass(driver);
+		comboPooledDataSource.setJdbcUrl(database_url);
+		comboPooledDataSource.setUser(database_username);
+		comboPooledDataSource.setPassword(database_password);
+		comboPooledDataSource.setMaxPoolSize(threadMaxPoolSize);
+		serverByUserID = new ConcurrentHashMap<Integer, ServerConnectionHandler>();
 	}
 	
-	
-	
-	public static void main(String args[]) throws NoSuchAlgorithmException, KeyStoreException, CertificateException, ClassNotFoundException, IOException 
+	public static void main(String args[]) throws NoSuchAlgorithmException, KeyStoreException, CertificateException, ClassNotFoundException, IOException, PropertyVetoException 
 	{
 		new Server().start();
 	}
-
-
 
 	public void start() throws NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, ClassNotFoundException{
 		System.out.println("Running server");
 		//Load the database driver
 		Class.forName(driver);
-		
-		recentlyRegisteredIPs = new ConcurrentSkipListSet<InetAddress>();
 		
 		//initDBConnection();
 		//SSL
@@ -141,7 +156,8 @@ public class Server {
 			{
 				ServerConnectionHandler connectionHandler = new ServerConnectionHandler(socket, this);
 				socket = null;
-				new Thread(connectionHandler).start();
+				//new Thread(connectionHandler).start();
+				threadPoolExecutor.execute(connectionHandler);
 			}
 		}catch(Exception e)
 		{

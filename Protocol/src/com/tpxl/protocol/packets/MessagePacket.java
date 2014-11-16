@@ -31,4 +31,8 @@ public class MessagePacket extends Packet {
 		return PacketType.MESSAGE;
 	}
 
+	public String getMessage()
+	{
+		return message;
+	}
 }

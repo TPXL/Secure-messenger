@@ -12,7 +12,7 @@ public class LoginPacket extends Packet {
 	String username;
 	String password;
 	
-	LoginPacket(String username, String password)
+	public LoginPacket(String username, String password)
 	{
 		this.username = username;
 		this.password = password;
@@ -34,4 +34,14 @@ public class LoginPacket extends Packet {
 		return PacketType.LOGIN;
 	}
 
+	public String getUsername()
+	{
+		return username;
+	}
+	
+	public String getPassword()
+	{
+		return password;
+	}
+	
 }

@@ -34,5 +34,20 @@ public class LoginStatusPacket extends Packet {
 	public PacketType getType() {
 		return PacketType.LOGINSTATUS;
 	}
+	
+	public boolean getSuccess()
+	{
+		return success;
+	}
+	
+	public String getMessage()
+	{
+		return message;
+	}
+	
+	public int getID()
+	{
+		return ID;
+	}
 
 }

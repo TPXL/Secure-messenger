@@ -33,4 +33,13 @@ public class FriendRemovePacket extends Packet {
 		return PacketType.FRIENDREMOVE;
 	}
 
+	public int getID()
+	{
+		return ID;
+	}
+	
+	public String getName()
+	{
+		return name;
+	}
 }

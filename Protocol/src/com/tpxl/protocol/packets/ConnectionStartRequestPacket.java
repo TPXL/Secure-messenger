@@ -11,22 +11,26 @@ public class ConnectionStartRequestPacket extends Packet {
 
 	String name;
 	int ID;
+	byte key[];
 	
-	ConnectionStartRequestPacket(String name, int ID)
+	public ConnectionStartRequestPacket(String name, int ID, byte[] key)
 	{
 		this.name = name;
 		this.ID = ID;
+		this.key = key;
 	}
 	
 	@Override
 	protected void writeData(OutputStream stream) throws IOException {
 		writeString(stream, name);
 		writeInt(stream, ID);
+		writeInt(stream, key.length);
+		writeByteArray(stream, key);
 	}
 	
 	public static ConnectionStartRequestPacket read(InputStream inputStream) throws IOException
 	{
-		return new ConnectionStartRequestPacket(readString(inputStream), readInt(inputStream));
+		return new ConnectionStartRequestPacket(readString(inputStream), readInt(inputStream), readByteArray(inputStream, readInt(inputStream)));
 	}
 
 	@Override
@@ -34,4 +38,18 @@ public class ConnectionStartRequestPacket extends Packet {
 		return PacketType.CONNECTIONSTARTREQUEST;
 	}
 
+	public String getName()
+	{
+		return name;
+	}
+	
+	public int getID()
+	{
+		return ID;
+	}
+	
+	public byte[] getKey()
+	{
+		return key;
+	}
 }

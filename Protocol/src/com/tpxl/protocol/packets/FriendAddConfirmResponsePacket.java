@@ -35,5 +35,19 @@ public class FriendAddConfirmResponsePacket extends Packet {
 	public PacketType getType() {
 		return PacketType.FRIENDADDCONFIRMRESPONSE;
 	}
-
+	
+	public boolean getSuccess()
+	{
+		return success;
+	}
+	
+	public String getName()
+	{
+		return name;
+	}
+	
+	public int getID()
+	{
+		return ID;
+	}
 }

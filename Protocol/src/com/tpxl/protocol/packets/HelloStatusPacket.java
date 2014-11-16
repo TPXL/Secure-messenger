@@ -32,5 +32,14 @@ public class HelloStatusPacket extends Packet {
 	public PacketType getType() {
 		return PacketType.HELLOSTATUS;
 	}
-
+	
+	public boolean getSuccess()
+	{
+		return success;
+	}
+	
+	public String getMessage()
+	{
+		return message;
+	}
 }

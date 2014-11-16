@@ -29,5 +29,10 @@ public class SearchFriendsPacket extends Packet {
 	public PacketType getType() {
 		return PacketType.SEARCHFRIENDS;
 	}
+	
+	public String getName()
+	{
+		return name;
+	}
 
 }

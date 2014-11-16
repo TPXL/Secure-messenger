@@ -30,5 +30,10 @@ public class ChangeNicknamePacket extends Packet {
 	public PacketType getType() {
 		return PacketType.CHANGENICKNAME;
 	}
+	
+	public String getNickname()
+	{
+		return nickname;
+	}
 
 }

@@ -33,4 +33,13 @@ public class FriendAddPacket extends Packet {
 		return PacketType.FRIENDADD;
 	}
 
+	public String getName()
+	{
+		return name;
+	}
+	
+	public int getID()
+	{
+		return ID;
+	}
 }

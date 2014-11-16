@@ -95,7 +95,7 @@ public abstract class Packet {
 		}
 	}
 	
-	public static void readPacket(ClientPacketHandler ph, InputStream stream) throws IOException
+	public static void readPacket(ClientToServerPacketHandler ph, InputStream stream) throws IOException
 	{
 		short ID = readShort(stream);
 		if(ID == PacketType.HELLOSTATUS.getCode())
@@ -139,6 +139,17 @@ public abstract class Packet {
 			//invalid ID
 		}
 	}
+
+	public static void readPacket(ClientToClientPacketHandler ph, InputStream stream) throws IOException
+	{
+		short ID = readShort(stream);
+		if(ID == PacketType.MESSAGE.getCode())
+		{
+			ph.onPacketReceive(MessagePacket.read(stream));
+		}
+	}
+	
+	
 	public void write(OutputStream stream) throws IOException
 	{
 		writeShort(stream, getType().getCode());
