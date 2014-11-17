@@ -3,6 +3,7 @@ package com.tpxl.server;
 import java.beans.PropertyVetoException;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -19,8 +20,11 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.tpxl.protocol.ClientToServerPacketHandler;
 
 
 public class Server {
@@ -125,16 +129,18 @@ public class Server {
 		*/
 		
 		
-		SSLServerSocketFactory socketFactory = null;
+		SSLServerSocketFactory socketFactory = getSecureServerSocketFactory(new FileInputStream("server.jks"));
 		try
 		{
+			/*
 			SSLContext sslContext = SSLContext.getInstance( "TLS" );
 	        KeyManagerFactory km = KeyManagerFactory.getInstance("SunX509");
 	        KeyStore ks = KeyStore.getInstance("JKS");
 	        ks.load(new FileInputStream("server.jks"), "123456".toCharArray());
 	        km.init(ks, "123456".toCharArray());
 	        sslContext.init(km.getKeyManagers(), null, null);
-	        socketFactory = sslContext.getServerSocketFactory();
+	        socketFactory = sslContext.getServerSocketFactory();*/
+
 		}catch(Exception e)
 		{
 			e.printStackTrace();
@@ -163,5 +169,41 @@ public class Server {
 		{
 			e.printStackTrace();
 		}
+	}
+	
+    public static SSLSocketFactory getSecureSocketFactory(InputStream is)
+	{
+		try
+		{
+			SSLContext sslContext = SSLContext.getInstance( "TLS" );
+			KeyStore clientks = KeyStore.getInstance("JKS");
+			clientks.load(is, "123456".toCharArray());
+			TrustManagerFactory tm = TrustManagerFactory.getInstance("SunX509");
+			tm.init(clientks);
+			sslContext.init(null, tm.getTrustManagers(), null);
+			return sslContext.getSocketFactory();
+		}catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public static SSLServerSocketFactory getSecureServerSocketFactory(InputStream is)
+	{
+		try
+		{
+			SSLContext sslContext = SSLContext.getInstance( "TLS" );
+	        KeyManagerFactory km = KeyManagerFactory.getInstance("SunX509");
+	        KeyStore ks = KeyStore.getInstance("JKS");
+	        ks.load(is, "123456".toCharArray());
+	        km.init(ks, "123456".toCharArray());
+	        sslContext.init(km.getKeyManagers(), null, null);
+	        return sslContext.getServerSocketFactory();
+		}catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		return null;
 	}
 }

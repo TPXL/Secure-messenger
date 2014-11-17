@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 
 import com.tpxl.protocol.packets.ChangeNicknamePacket;
+import com.tpxl.protocol.packets.ConnectionStartInfoPacket;
 import com.tpxl.protocol.packets.ConnectionStartPacket;
 import com.tpxl.protocol.packets.ConnectionStartRequestPacket;
 import com.tpxl.protocol.packets.FriendAddConfirmPacket;
@@ -128,7 +129,7 @@ public abstract class Packet {
 		}
 		else if(ID == PacketType.CONNECTIONSTARTINFO.getCode())
 		{
-			ph.onPacketReceive(FriendListPacket.read(stream));
+			ph.onPacketReceive(ConnectionStartInfoPacket.read(stream));
 		}
 		else if(ID == PacketType.CONNECTIONSTART.getCode())
 		{

@@ -56,7 +56,8 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 		this.socket = socket;
 		this.server = server;
 		ID = null;
-		checkForNewFriends = false;
+		checkForNewFriends = true;
+		nickname = "";
 		friendListsToSend = new ConcurrentLinkedQueue<Integer>();
 		infoPacketsToSend = new ConcurrentLinkedQueue<ConnectionStartInfoPacket>();
 	}
@@ -84,57 +85,103 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 				Packet.readPacket(this, inputStream);
 			}catch(SocketTimeoutException e)
 			{
-				
 			}
 			catch(IOException e)
 			{
 				e.printStackTrace();
-				server.serverByUserID.remove(ID);
+				if(ID != null)
+					server.serverByUserID.remove(ID);
 				break;
 			}
-			finally
-			{
-				
-			}
-			if(ID != null && checkForNewFriends)
+			while(ID != null && checkForNewFriends)
 			{
 				try {
 					sendFriendRequest();
 				} catch (IOException e) {
 					e.printStackTrace();
-					server.serverByUserID.remove(ID);
+
+					if(ID != null)
+						server.serverByUserID.remove(ID);
 					break;
 				}
 			}
-			if(ID != null && infoPacketsToSend.size() > 0)
+			while(ID != null && infoPacketsToSend.size() > 0)
 			{
+				System.out.println("Sending CSIP!");
 				try {
 					ConnectionStartInfoPacket CSIP = infoPacketsToSend.poll();
 					if(CSIP != null)
-					CSIP.write(socket.getOutputStream());
+					{
+						CSIP.write(socket.getOutputStream());
+						System.out.println("CSIP sent!");
+					}
+					else
+					{
+						System.out.println("CSIP null for some reason!");
+					}
 				} catch (IOException e) {
 					e.printStackTrace();
-					server.serverByUserID.remove(ID);
+					if(ID != null)
+						server.serverByUserID.remove(ID);
 					break;
+				}
+			}
+			while(ID != null && friendListsToSend.size() > 0)
+			{
+				try {
+					sendSingleFriendData(friendListsToSend.poll());
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 		}
 		System.out.println("Connection closed!");
 	}
 	
+	void sendSingleFriendData(Integer ID) throws IOException
+	{
+		try
+		{
+		Connection databaseConnection = server.comboPooledDataSource.getConnection();
+		PreparedStatement ps = databaseConnection.prepareStatement("select distinct ID, username, nickname from user where ID = ?");
+		ps.setInt(1, ID.intValue());
+		ps.executeQuery();
+		ResultSet resultSet = ps.getResultSet();
+		if(resultSet.next())
+		{
+			Integer cID = resultSet.getInt(1);
+			ServerConnectionHandler serverConnectionHandler = server.serverByUserID.get(cID);
+			if(serverConnectionHandler == null)
+			{
+				System.out.println(resultSet.getString(2) + " " + resultSet.getString(3));
+				new FriendListPacket(resultSet.getString(2), resultSet.getString(3), cID.intValue(), false).write(socket.getOutputStream());
+			}
+			else
+			{
+				new FriendListPacket(resultSet.getString(2), resultSet.getString(3), cID.intValue(), true).write(socket.getOutputStream());
+			}
+		}
+		}catch(SQLException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
 	void sendFriendRequest() throws IOException
 	{
 		try {
 			Connection connection = server.comboPooledDataSource.getConnection();
-			PreparedStatement ps = connection.prepareStatement("select user.id, user.username from new_friends, user where user.ID = newFriends.ID_from and newFriends.ID_to = ?");
+			PreparedStatement ps = connection.prepareStatement("select user.id, user.username from new_friends, user where user.ID = new_friends.ID_from and new_friends.ID_to = ?");
 			ps.setInt(1, ID.intValue());
 			checkForNewFriends = false;
 			ps.executeQuery();
 			ResultSet resultSet = ps.getResultSet();
 			while(resultSet.next())
 			{
+				System.out.println("Sending a new friend! :3");
 				new FriendAddConfirmPacket(resultSet.getString(2), resultSet.getInt(1)).write(socket.getOutputStream());
-				ps = connection.prepareStatement("delete from new_friends where newFriends.ID_to = ? and newFriends.ID_from = ?");
+				ps = connection.prepareStatement("delete from new_friends where new_friends.ID_to = ? and new_friends.ID_from = ?");
 				ps.setInt(1, ID.intValue());
 				ps.setInt(2, resultSet.getInt(1));
 				ps.executeUpdate();
@@ -189,7 +236,7 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 		{
 			
 			Connection databaseConnection = server.comboPooledDataSource.getConnection();
-			PreparedStatement ps = databaseConnection.prepareStatement("select ID, username from user where username like ? and password like ? limit 1");
+			PreparedStatement ps = databaseConnection.prepareStatement("select ID, username, nickname from user where username like ? and password like ? limit 1");
 			ps.setString(1, loginPacket.getUsername());
 			ps.setString(2, loginPacket.getPassword());
 			ps.executeQuery();
@@ -198,10 +245,11 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 			{
 				this.ID = resultSet.getInt(1);
 				this.username = resultSet.getString(2);
-				new LoginStatusPacket(true, "Login success!", ID.intValue()).write(socket.getOutputStream());
+				this.nickname = resultSet.getString(3);
+				new LoginStatusPacket(true, "Login success!", nickname, ID.intValue()).write(socket.getOutputStream());
 				server.serverByUserID.put(ID, this);
 				
-				ps = databaseConnection.prepareStatement("select distinct ID, username, nickname from user where ID in (select id1 from friends where id2 = ?) or ID in (select id2 from friends where id1 = ?) and ID != ?");
+				ps = databaseConnection.prepareStatement("select distinct ID, username, nickname from user where (ID in (select id1 from friends where id2 = ?) or ID in (select id2 from friends where id1 = ?)) and ID != ?");
 				ps.setInt(1, ID.intValue());
 				ps.setInt(2, ID.intValue());
 				ps.setInt(3, ID.intValue());
@@ -213,18 +261,19 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 					ServerConnectionHandler serverConnectionHandler = server.serverByUserID.get(cID);
 					if(serverConnectionHandler == null)
 					{
+						System.out.println(resultSet.getString(2) + " " + resultSet.getString(3));
 						new FriendListPacket(resultSet.getString(2), resultSet.getString(3), cID.intValue(), false).write(socket.getOutputStream());
 					}
 					else
 					{
 						new FriendListPacket(resultSet.getString(2), resultSet.getString(3), cID.intValue(), true).write(socket.getOutputStream());
-						serverConnectionHandler.friendListsToSend.add(ID);
+						serverConnectionHandler.friendListsToSend.add(this.ID);
 					}
 				}
 			}
 			else
 			{
-				new LoginStatusPacket(false, "Wrong username/password combination!", -1).write(socket.getOutputStream());
+				new LoginStatusPacket(false, "Wrong username/password combination!", "", -1).write(socket.getOutputStream());
 			}
 		}catch(Exception e)
 		{
@@ -281,8 +330,9 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 		System.out.println("Searching friends!");
 		try {
 			Connection databaseConnection = server.comboPooledDataSource.getConnection();
-			PreparedStatement ps = databaseConnection.prepareStatement("Select ID, username from user where username like ?");
+			PreparedStatement ps = databaseConnection.prepareStatement("Select ID, username from user where username like ? and username not like ?");
 			ps.setString(1, searchFriendsPacket.getName());
+			ps.setString(2, username);
 			ps.executeQuery();
 			ResultSet rs = ps.getResultSet();
 			while(rs.next())
@@ -348,11 +398,11 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 				ServerConnectionHandler serverConnectionHandler = server.serverByUserID.get(friendAddConfirmResponsePacket.getID());
 				if(serverConnectionHandler == null)
 				{
-					new FriendListPacket(friendAddConfirmResponsePacket.getName(), nickname, friendAddConfirmResponsePacket.getID(), false).write(socket.getOutputStream());
+					new FriendListPacket(friendAddConfirmResponsePacket.getName(), friendAddConfirmResponsePacket.getNickname(), friendAddConfirmResponsePacket.getID(), false).write(socket.getOutputStream());
 				}
 				else
 				{
-					new FriendListPacket(friendAddConfirmResponsePacket.getName(), nickname, friendAddConfirmResponsePacket.getID(), true).write(socket.getOutputStream());
+					new FriendListPacket(friendAddConfirmResponsePacket.getName(), friendAddConfirmResponsePacket.getNickname(), friendAddConfirmResponsePacket.getID(), true).write(socket.getOutputStream());
 					serverConnectionHandler.friendListsToSend.add(this.ID);
 				}
 				
@@ -362,7 +412,6 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 			{
 				e.printStackTrace();
 			}
-			
 		}
 	}
 	@Override
@@ -392,12 +441,17 @@ public class ServerConnectionHandler implements Runnable, ServerPacketHandler{
 	}
 	@Override
 	public void onPacketReceive(ConnectionStartRequestPacket connectionStartRequestPacket) {
-		
+		System.out.println("Got a CSRP packet!");
 		Integer ID = connectionStartRequestPacket.getID();
 		ServerConnectionHandler serverConnectionHandler = server.serverByUserID.get(ID);
 		if(serverConnectionHandler != null)
 		{
-			serverConnectionHandler.infoPacketsToSend.add(new ConnectionStartInfoPacket(serverConnectionHandler.socket.getInetAddress().getHostAddress(), connectionStartRequestPacket.getKey()));
+			System.out.println("The other guy is online!");
+			serverConnectionHandler.infoPacketsToSend.add(new ConnectionStartInfoPacket(serverConnectionHandler.socket.getInetAddress().getHostAddress(), username + " " +nickname, connectionStartRequestPacket.getKey()));
+		}
+		else
+		{
+			System.out.println("The other guy isn't online!");
 		}
 
 	}

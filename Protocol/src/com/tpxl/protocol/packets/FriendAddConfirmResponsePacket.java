@@ -11,11 +11,13 @@ public class FriendAddConfirmResponsePacket extends Packet {
 
 	boolean success;
 	String name;
+	String nickname;
 	int ID;
 	
-	public FriendAddConfirmResponsePacket(boolean success, String name, int ID) {
+	public FriendAddConfirmResponsePacket(boolean success, String name, String nickname, int ID) {
 		this.success = success;
 		this.name = name;
+		this.nickname = nickname;
 		this.ID = ID;
 	}
 	
@@ -23,12 +25,13 @@ public class FriendAddConfirmResponsePacket extends Packet {
 	protected void writeData(OutputStream stream) throws IOException {
 		writeBoolean(stream, success);
 		writeString(stream, name);
+		writeString(stream, nickname);
 		writeInt(stream, ID);
 	}
 
 	public static FriendAddConfirmResponsePacket read(InputStream inputStream) throws IOException
 	{
-		return new FriendAddConfirmResponsePacket(readBoolean(inputStream), readString(inputStream), readInt(inputStream));
+		return new FriendAddConfirmResponsePacket(readBoolean(inputStream), readString(inputStream), readString(inputStream), readInt(inputStream));
 	}
 	
 	@Override
@@ -49,5 +52,10 @@ public class FriendAddConfirmResponsePacket extends Packet {
 	public int getID()
 	{
 		return ID;
+	}
+	
+	public String getNickname()
+	{
+		return nickname;
 	}
 }

@@ -12,22 +12,25 @@ public class LoginStatusPacket extends Packet {
 	boolean success;
 	String message;
 	int ID;
+	String nickname;
 	
-	public LoginStatusPacket(boolean success, String message, int ID) {
+	public LoginStatusPacket(boolean success, String message, String nickname, int ID) {
 		this.success = success;
 		this.message = message;
+		this.nickname = nickname;
 		this.ID = ID;
 	}
 	
 	protected void writeData(OutputStream stream) throws IOException {
 		writeBoolean(stream, success);
 		writeString(stream, message);
+		writeString(stream, nickname);
 		writeInt(stream, ID);
 	}
 
 	public static LoginStatusPacket read(InputStream stream) throws IOException
 	{
-		return new LoginStatusPacket(readBoolean(stream), readString(stream), readInt(stream));
+		return new LoginStatusPacket(readBoolean(stream), readString(stream), readString(stream), readInt(stream));
 	}
 	
 	@Override
@@ -48,6 +51,11 @@ public class LoginStatusPacket extends Packet {
 	public int getID()
 	{
 		return ID;
+	}
+	
+	public String getNickname()
+	{
+		return nickname;
 	}
 
 }
