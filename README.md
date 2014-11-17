@@ -3,11 +3,9 @@ Secure-messenger
 
 Dependencies:
 
--cling
-
--c3p0
-
--mysql connector
+-   cling
+-   c3p0
+-   mysql connector
 
 ================
 
@@ -17,20 +15,21 @@ Quick how to use:
 You need a MySQL schema named "messenger_users" running with three tables:
 
 user:
-int(10) ID            - primary key, not null, unique, auto increment
-varchar(45) username  - not null, unique
-varchar(128) password - not null
-varchar(45) nickname  - non null, default ''
+
+-   int(10) ID            - primary key, not null, unique, auto increment 
+-   varchar(45) username  - not null, unique 
+-   varchar(128) password - not null 
+-   varchar(45) nickname  - non null, default '' 
 
 new_friends:
-int(10) ID_from   - primary key, not null
-int(10) ID_to     - primary key, not null
+-   int(10) ID_from   - primary key, not null 
+-   int(10) ID_to     - primary key, not null 
 
 friends 
-int(10) ID1     - primary key, not null
-int(10) ID2     - primary key, not null
+-   int(10) ID1     - primary key, not null 
+-   int(10) ID2     - primary key, not null 
 
-Default username is "messenger_admin" and default password is "password1234"
+Default username is "messenger_admin" and default password is "password1234" 
 
 2.
 Run the server.
