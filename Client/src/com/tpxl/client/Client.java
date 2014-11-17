@@ -55,10 +55,11 @@ public class Client implements Runnable{
 				while(a.hasMoreElements())
 				{
 					InetAddress addr = a.nextElement();
+					/*
 					if(addr instanceof Inet6Address)
 						continue;
 					if(addr.isLoopbackAddress())
-						continue;
+						continue;*/
 					PortMapping mapping = new PortMapping(clientPort, addr.getHostAddress(), PortMapping.Protocol.TCP, "Messenger " + addr.getHostAddress());
 					System.out.println("new mapping " + clientPort + " " + addr.getHostAddress());
 					UpnpService upnpService = new UpnpServiceImpl(new PortMappingListener(mapping));

@@ -4,11 +4,17 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.math.BigInteger;
 import java.net.Socket;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Scanner;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -108,7 +114,7 @@ public class ClientToServerConnectionHandler implements Runnable, ClientToServer
         {
             try
             {
-                new LoginPacket(username, password).write(socket.getOutputStream());
+                new LoginPacket(username, generateStorngPasswordHash(password)).write(socket.getOutputStream());
             }catch(Exception e)
             {
                 e.printStackTrace();
@@ -119,7 +125,7 @@ public class ClientToServerConnectionHandler implements Runnable, ClientToServer
         {
              try
             {
-                new RegisterPacket(username, password).write(socket.getOutputStream());
+                new RegisterPacket(username, generateStorngPasswordHash(password)).write(socket.getOutputStream());
             }catch(Exception e)
             {
                 e.printStackTrace();
@@ -317,4 +323,35 @@ public class ClientToServerConnectionHandler implements Runnable, ClientToServer
 		}
 	}
 
+	private static String generateStorngPasswordHash(String password) throws NoSuchAlgorithmException, InvalidKeySpecException
+	{
+		int iterations = 1000;
+		char[] chars = password.toCharArray();
+		byte[] salt = getSalt();
+		
+		PBEKeySpec spec = new PBEKeySpec(chars, salt, iterations, 64 * 8);
+		SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+		byte[] hash = skf.generateSecret(spec).getEncoded();
+		return toHex(hash);
+	}
+	
+	private static byte[] getSalt() throws NoSuchAlgorithmException
+	{
+		byte[] salt = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+		return salt;
+	}
+	
+	private static String toHex(byte[] array) throws NoSuchAlgorithmException
+	{
+		BigInteger bi = new BigInteger(1, array);
+		String hex = bi.toString(16);
+		int paddingLength = (array.length * 2) - hex.length();
+		if(paddingLength > 0)
+		{
+			return String.format("%0"  +paddingLength + "d", 0) + hex;
+		}else{
+			return hex;
+		}
+	}
+	
 }
